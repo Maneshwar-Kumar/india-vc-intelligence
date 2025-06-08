@@ -24,7 +24,7 @@ st.set_page_config(
 )
 
 # Version check
-st.success("✅ VERSION: Enhanced Google with AI Filtering v4.0 - FIXED DEPLOYMENT")
+st.success("✅ VERSION: Enhanced Google with AI Filtering v4.0 - SYNTAX FIXED")
 
 # Handle API imports with error checking
 api_connected = False
@@ -509,7 +509,7 @@ class EnhancedSearchSystem:
             "Karthik Reddy Blume Ventures thesis",
             "Mukul Arora Elevation Capital insights",
             
-            # SECTOR-SPECIFIC INTELLIGENCE (2024 FOCUS)
+            # SECTOR-SPECIFIC INTELLIGENCE
             "fintech investment trends India 2024",
             "SaaS startup scaling India 2024", 
             "B2B marketplace strategy India 2024",
@@ -800,12 +800,191 @@ with tab1:
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        # Simple feedback
-                        col_fb1, col_fb2 = st.columns(2)
+                        # Simple feedback section
+                        feedback_col1, feedback_col2 = st.columns(2)
                         
-                        with col_fb1:
+                        with feedback_col1:
                             if st.button(f"👍 Helpful", key=f"like_{article.id}"):
                                 if db and db.save_feedback(article.id, 5, "Helpful content"):
                                     st.success("✅ Feedback saved!")
                         
-                        with col_
+                        with feedback_col2:
+                            if st.button(f"👎 Not Useful", key=f"dislike_{article.id}"):
+                                if db and db.save_feedback(article.id, 1, "Not relevant"):
+                                    st.success("✅ Feedback noted")
+                
+                else:
+                    st.warning("No results found. Try adjusting filters or check API connectivity.")
+
+with tab2:
+    st.markdown("### 📋 Strategic Content Library")
+    
+    if db:
+        # Get articles from database
+        all_articles = db.get_articles(limit=50)
+        
+        if all_articles:
+            st.info(f"📚 **Content Library:** {len(all_articles)} strategic articles stored")
+            
+            # Display articles
+            for i, article_row in enumerate(all_articles):
+                # Unpack article data (all stored as strings)
+                try:
+                    (article_id, title, content, url, domain, source_quality, published_date,
+                     search_query, search_category, relevance_score, ai_summary, key_insights,
+                     is_paywall, content_freshness, user_rating, bookmark_count, view_count, created_at) = article_row
+                    
+                    # Convert score to int for display
+                    try:
+                        score = int(relevance_score) if relevance_score and str(relevance_score).isdigit() else 0
+                    except:
+                        score = 0
+                    
+                    with st.expander(f"📄 {title} - Score: {score}/100", expanded=False):
+                        st.write(f"**🎯 Strategic Value:** {ai_summary}")
+                        st.write(f"**💡 Key Insights:** {key_insights}")
+                        st.write(f"**📂 Category:** {search_category.replace('_', ' ').title()}")
+                        st.write(f"**🌐 Source:** {domain} ({source_quality})")
+                        st.write(f"**📅 Content Age:** {content_freshness}")
+                        
+                        if str(is_paywall).lower() == 'true':
+                            st.warning("🔒 This content may be behind a paywall")
+                        
+                        st.write(f"[🔗 Read Article]({url})")
+                        
+                        # Simple rating
+                        rating = st.selectbox("Rate this content", [None, 1, 2, 3, 4, 5], key=f"rate_{article_id}")
+                        if rating:
+                            if db and db.save_feedback(article_id, rating):
+                                st.success(f"Rated {rating}/5!")
+                
+                except Exception as e:
+                    st.error(f"Error displaying article: {e}")
+        
+        else:
+            st.info("No articles in library yet. Run a discovery search to populate the library.")
+    
+    else:
+        st.error("Database not available")
+
+with tab3:
+    st.markdown("### ⚙️ System Status & Configuration")
+    
+    # API Status
+    col_status1, col_status2 = st.columns(2)
+    
+    with col_status1:
+        st.markdown("#### 🔌 API Connections")
+        
+        if api_connected:
+            st.success("✅ **APIs Connected**")
+            st.write("• Tavily Search API - Ready")
+            st.write("• OpenAI API - Ready")
+        else:
+            st.error("❌ **APIs Not Connected**")
+            st.info("Add OPENAI_API_KEY and TAVILY_API_KEY to Streamlit secrets")
+    
+    with col_status2:
+        st.markdown("#### 🗄️ Database Status")
+        
+        if db:
+            st.success("✅ **Database Connected**")
+            st.write(f"• Total Articles: {analytics['total_articles']}")
+            st.write(f"• High Quality: {analytics['high_quality']}")
+            st.write(f"• Average Score: {analytics['avg_score']}/100")
+        else:
+            st.error("❌ **Database Not Available**")
+    
+    # System Configuration
+    st.markdown("#### ⚙️ Current Configuration")
+    st.write("**Search Queries:** 48 strategic queries")
+    st.write("**Search Scope:** Last 6 months")
+    st.write("**Quality Threshold:** Configurable (currently 55+)")
+    st.write("**Database:** SQLite with simplified schema")
+    st.write("**AI Analysis:** OpenAI GPT-4o-mini with fallback")
+    
+    # Test Functions
+    st.markdown("#### 🧪 System Tests")
+    
+    col_test1, col_test2, col_test3 = st.columns(3)
+    
+    with col_test1:
+        if st.button("Test Database"):
+            if db:
+                try:
+                    test_analytics = db.get_analytics()
+                    st.success(f"✅ Database OK - {test_analytics['total_articles']} articles")
+                except Exception as e:
+                    st.error(f"❌ Database Error: {e}")
+            else:
+                st.error("❌ Database not initialized")
+    
+    with col_test2:
+        if st.button("Test APIs"):
+            if api_connected:
+                try:
+                    if tavily_client:
+                        test_search = tavily_client.search(query="test", max_results=1)
+                        st.success("✅ Tavily API OK")
+                    
+                    if openai:
+                        test_completion = openai.chat.completions.create(
+                            model="gpt-4o-mini",
+                            messages=[{"role": "user", "content": "Test"}],
+                            max_tokens=5
+                        )
+                        st.success("✅ OpenAI API OK")
+                        
+                except Exception as e:
+                    st.error(f"❌ API Error: {e}")
+            else:
+                st.error("❌ APIs not connected")
+    
+    with col_test3:
+        if st.button("Clear Database"):
+            if st.button("⚠️ Confirm Clear", type="secondary"):
+                # This would clear the database - implement if needed
+                st.warning("Database clear function - implement if needed")
+    
+    # Export functionality
+    st.markdown("#### 📥 Data Export")
+    
+    if st.button("📊 Export Articles to CSV"):
+        if db:
+            articles = db.get_articles()
+            if articles:
+                # Create DataFrame
+                df = pd.DataFrame(articles, columns=[
+                    'id', 'title', 'content', 'url', 'domain', 'source_quality',
+                    'published_date', 'search_query', 'search_category', 
+                    'relevance_score', 'ai_summary', 'key_insights', 
+                    'is_paywall', 'content_freshness', 'user_rating',
+                    'bookmark_count', 'view_count', 'created_at'
+                ])
+                
+                # Convert to CSV
+                csv = df.to_csv(index=False)
+                
+                # Download button
+                st.download_button(
+                    label="📥 Download CSV",
+                    data=csv,
+                    file_name=f"vc_intelligence_{datetime.now().strftime('%Y%m%d')}.csv",
+                    mime="text/csv"
+                )
+                st.success("✅ CSV ready for download!")
+            else:
+                st.warning("No articles to export")
+        else:
+            st.error("Database not available")
+
+# Footer
+st.markdown("---")
+st.markdown("### 🚀 System Status")
+
+if api_connected and db and analytics['total_articles'] >= 0:
+    st.success("✅ **India VC Intelligence Pro v4.0 OPERATIONAL** • Database Ready • APIs Connected • Discovery Engine Active")
+else:
+    st.warning("⚠️ **System Partially Operational** • Check API configuration and database connection")
+
+st.markdown(f"🧠 **Enhanced VC Intelligence System** | Strategic Content Discovery & Analysis | {datetime.now().strftime('%Y-%m-%d %H:%M')}")
